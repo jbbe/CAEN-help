@@ -19,6 +19,9 @@ class CaenHelp(Gtk.Application):
         window.set_resizable(0)
         window.set_border_width(10)
 
+        #Gtk.Grid
+        # attach(child, left, top, width, height)
+
         # Create and define a Gtk.Grid
         grid = Gtk.Grid()
         grid.set_column_spacing(5)
@@ -26,30 +29,66 @@ class CaenHelp(Gtk.Application):
         grid.set_halign(1)
         grid.set_valign(1)
 
+        # Define the left grid that will hold the CAEN logo
+        grid_left = Gtk.Grid()
+        grid_left.set_column_spacing(5)
+        grid_left.set_row_spacing(5)
+        grid_left.set_halign(1)
+        grid_left.set_valign(1)
+
+        # Define the right grid that will hold the buttons
+        grid_right = Gtk.Grid()
+        grid_right.set_column_spacing(5)
+        grid_right.set_row_spacing(5)
+        grid_right.set_halign(1)
+        grid_right.set_valign(1)
+
+        # Attach the two grids to the initial
+        grid.attach(grid_left, 0, 0, 1, 1)
+        grid.attach(grid_right, 1, 0, 1, 1)
+
+        ### Left Grid Contents ###
+
         # Establish a frame around the caen logo
-        logoframe = Gtk.Frame()
-        logoframe.set_shadow_type(0)
+        logo_frame = Gtk.Frame()
+        logo_frame.set_shadow_type(0)
         logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/caen.png')
-        logoframe.add(logo)
-        grid.attach(logoframe, 0, 0, 1, 1 )
+        logo_frame.add(logo)
+        grid_left.attach(logo_frame, 0, 0, 1, 1)
+
+
+        ### Right Grid Contents ###
 
         # Info field
         infoframe = Gtk.Frame()
         infoframe.set_shadow_type(3)
+        infoframe.set_label("System Information")
+        infoframe.set_label_align(.5,1.0)
+        infoframe.set_border_width(0)
         test = Gtk.Label(self.sysinfo())
         test.set_justify(0)
         infoframe.add(test)
-        grid.attach(infoframe, 0, 1, 1, 1)
+        grid_right.attach(infoframe, 0, 0, 1, 2)
 
         # Report Button
         reportbutton = Gtk.Button.new_with_label("Report a Problem")
         reportbutton.connect("clicked", self.report_problem)
-        grid.attach(reportbutton, 0, 2, 1, 1)
+        grid_right.attach(reportbutton, 0, 2, 1, 1)
 
         # FAQ Button
         faqbutton = Gtk.Button.new_with_label("Visit the FAQ")
         faqbutton.connect("clicked", self.visit_faq)
-        grid.attach(faqbutton, 0, 3, 1, 1)
+        grid_right.attach(faqbutton, 0, 3, 1, 1)
+
+         # Right Grid Spacing Buffer
+        #buffer = Gtk.Label()
+        #grid_right.attach(buffer, 0, 0, 1, 1)
+
+        # Hotline Status
+        helpdesk_status = Gtk.Label("Helpdesk Status: Online")
+
+        # Attach
+        grid_right.attach(helpdesk_status, 0, 4, 2, 1)
 
         # Attach grid to window and tell window to display everything attached
         window.add(grid)
