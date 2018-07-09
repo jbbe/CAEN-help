@@ -1,3 +1,7 @@
+### CAEN Help Application ###
+# Python3 and PyGObject
+# http://lazka.github.io/pgi-docs/index.html
+
 import gi
 import sys
 import webbrowser
@@ -52,57 +56,60 @@ class CaenHelp(Gtk.Application):
         # Establish a frame around the caen logo
         logo_frame = Gtk.Frame()
         logo_frame.set_shadow_type(0)
-        logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/caen.png')
-        logo_frame.add(logo)
+        caen_logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/caen.png')
+        logo_frame.add(caen_logo)
         grid_left.attach(logo_frame, 0, 0, 1, 1)
 
 
         ### Right Grid Contents ###
 
         # Info field
-        infoframe = Gtk.Frame()
-        infoframe.set_shadow_type(3)
-        infoframe.set_label("System Information")
-        infoframe.set_label_align(.5,1.0)
-        infoframe.set_border_width(0)
-        test = Gtk.Label(self.sysinfo())
-        test.set_justify(0)
-        infoframe.add(test)
-        grid_right.attach(infoframe, 0, 0, 1, 2)
+        sys_info_frame = Gtk.Frame()
+        sys_info_frame.set_shadow_type(3)
+        sys_info_frame.set_label("System Information")
+        sys_info_frame.set_label_align(.5,1.0)
+        sys_info_frame.set_border_width(0)
+        sys_info = Gtk.Label(self.get_sys_info())
+        sys_info.set_justify(0)
+        sys_info_frame.add(sys_info)
+        grid_right.attach(sys_info_frame, 0, 0, 1, 2)
 
         # Report Button
-        reportbutton = Gtk.Button.new_with_label("Report a Problem")
-        reportbutton.connect("clicked", self.report_problem)
-        grid_right.attach(reportbutton, 0, 2, 1, 1)
+        report_button = Gtk.Button.new_with_label("Report a Problem")
+        report_button.connect("clicked", self.report_problem)
+        grid_right.attach(report_button, 0, 2, 1, 1)
+
+        # Helpdesk Button
+        chat_button = Gtk.Button.new_with_label("Chat with the Helpdesk")
+        chat_button.connect("clicked", self.start_chat)
+        grid_right.attach(chat_button, 0, 3, 1, 1)
 
         # FAQ Button
-        faqbutton = Gtk.Button.new_with_label("Visit the FAQ")
-        faqbutton.connect("clicked", self.visit_faq)
-        grid_right.attach(faqbutton, 0, 3, 1, 1)
+        faq_button = Gtk.Button.new_with_label("Visit the FAQ")
+        faq_button.connect("clicked", self.visit_faq)
+        grid_right.attach(faq_button, 0, 4, 1, 1)
 
          # Right Grid Spacing Buffer
         #buffer = Gtk.Label()
         #grid_right.attach(buffer, 0, 0, 1, 1)
 
-        # Hotline Status
-        helpdesk_status = Gtk.Label("Helpdesk Status: Online")
-
-        # Attach
-        grid_right.attach(helpdesk_status, 0, 4, 2, 1)
-
         # Attach grid to window and tell window to display everything attached
         window.add(grid)
         window.show_all()
-
-    def visit_faq(faqbutton, data=None):
+    
+    def start_chat(chat_button, data=None):
+        webbrowser.open('https://caen.engin.umich.edu/contact/')
+    def visit_faq(faq_button, data=None):
         webbrowser.open('http://caenfaq.engin.umich.edu/')
 
-    def report_problem(reportbutton, data=None):
+    def report_problem(report_button, data=None):
+        # Creates a separate window
         window = Gtk.ApplicationWindow()
         window.set_title("")
         window.set_position(1)
         window.set_resizable(0)
         window.set_border_width(10)
+
         grid = Gtk.Grid()
         grid.set_column_spacing(5)
         grid.set_row_spacing(5)
@@ -119,6 +126,9 @@ class CaenHelp(Gtk.Application):
         answer2 = Gtk.Entry()
 
         question3 = Gtk.Label("Screenshot(s) of issue or other useful information:")
+        file1 = Gtk.FileChooserButton("Select a file", 0)
+        file2 = Gtk.FileChooserButton("Select another file", 0)
+       
 
 
         submit = Gtk.Button.new_with_label("Submit")
@@ -128,13 +138,15 @@ class CaenHelp(Gtk.Application):
         grid.attach(question2, 0, 1, 1, 1)
         grid.attach(answer2, 1, 1, 1, 1,)
         grid.attach(question3, 0, 2, 1, 1)
-        grid.attach(submit, 1, 3, 1, 1)
+        grid.attach(file1, 1, 2, 1, 1)
+        grid.attach(file2, 1, 3, 1, 1)
+        grid.attach(submit, 1, 4, 1, 1)
         window.add(grid)
         window.show_all()
 
         
     @staticmethod
-    def sysinfo():
+    def get_sys_info():
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
         macaddr_hex = uuid.UUID(int=uuid.getnode()).hex[-12:]
