@@ -10,11 +10,12 @@ import os
 import webbrowser
 import socket
 import uuid
+import time
 import datetime
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gio
-from subprocess import Popen
+from subprocess import Popen, PIPE, run
 from pathlib import Path
 from pwd import getpwnam  
 
@@ -145,7 +146,7 @@ class CaenHelp(Gtk.Application):
             Popen(['ps', '-ef'], stdout=process_list).communicate()[0]
             # Reopen the file for reading, in read only mode for no particular reason. 
             process_list = open("/tmp/caen-help-%s-process-list" % UserName, "r")
-            return ''.join(["Hostname: %s\n" % hostname.split(".")[0], "IP: ", "%s\n" % ip, "Username: %s\n" % UserName, "Active Sessions:\n %s\n" % active_sessions, "UID: %s\n" % uid, "GID: %s\n" % gid, "PTS Groups:\n %s\n" % pts_grps, "Has Homedir: %s\n" % has_homedir, "User Process List:\n %s" % process_list.read()])
+            return ''.join(["Hostname: %s\n" % hostname.split(".")[0], "IP: ", "%s\n" % ip, "Username: %s\n" % UserName, "Active Sessions:\n %s\n" % active_sessions, "UID: %s\n" % uid, "GID: %s\n" % gid, "PTS Groups:\n %s\n" % pts_grps, "Has Homedir: %s\n" % has_homedir, "User Process List:\n %s\n" % process_list.read()])
 
     def start_chat(self, chat_button, data=None):
         webbrowser.open('https://caen.engin.umich.edu/contact/')
@@ -171,9 +172,17 @@ class CaenHelp(Gtk.Application):
         else:
             Popen(["gnome-screenshot","-f","/tmp/caen-help-%s-1.png" % UserName])
             screenshot_button.set_label("Take another screenshot")
+    def do_cleanup(self, UserName):
+        Popen(["rm", "/tmp/caen-help-%s-\*" % UserName])
+        receipt = open("/tmp/caen-help-%s-receipt" % UserName, "w+")
+        receipt.close()
+
     def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName):
         # Check whether or not report has been sent in the last 5 minutes
-        #TODO
+        if os.path.exists('/tmp/caen-help-%s-receipt' % UserName):
+            # Check if receipt is older than 5 minutes
+            if os.path.getmtime('/tmp/caen-help-%s-receipt' % UserName) <= (time.time() - 5):
+                self.main_quit()
         
         # Convert the input buffer into text
         issue_description_input = IssueDescription.get_buffer()
@@ -204,33 +213,47 @@ class CaenHelp(Gtk.Application):
         # If No is selected: skip system info collection and just send input + other attachments
         if this_computer_response:
             if attachment_conf == 5:
-                Popen(['mail'])
+                print(f"%s" % Attachment.get_filename())
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "/tmp/caen-help-%s-2.png" % UserName, "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 4:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "/tmp/caen-help-%s-2.png" % UserName], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 3:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 2:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 1:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu", "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             else:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
+            
             
         # If Yes is selected: gather system info report and email with attachments
         else:
             report = self.get_sys_info(False, UserName)
             if attachment_conf == 5:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "/tmp/caen-help-%s-2.png" % UserName, "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 4:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "/tmp/caen-help-%s-2.png" % UserName], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 3:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 2:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             elif attachment_conf == 1:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu", "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
             else:
-                Popen(['mail'])
+                send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
+                self.do_cleanup(UserName)
 
     def report_problem(self,report_button, UserName):
 
