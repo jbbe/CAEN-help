@@ -2,7 +2,7 @@
 # Python3 and PyGObject
 # http://lazka.github.io/pgi-docs/index.html
 # Linux Version written by Dakota Lambert
-# Linux v0.75
+# Linux v0.95
 
 import gi
 import sys
@@ -14,7 +14,7 @@ import datetime
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gio
-from subprocess import call
+from subprocess import Popen
 from pathlib import Path
 from pwd import getpwnam  
 
@@ -31,7 +31,8 @@ class CaenHelp(Gtk.Application):
         window.set_border_width(10)
 
         # Get UserName of currently logged in user
-        UserName = os.getlogin()
+        #UserName = os.getlogin()]
+        UserName = "drlamb"
         # Gtk.Grid
         # attach(child, left, top, width, height)
 
@@ -44,6 +45,7 @@ class CaenHelp(Gtk.Application):
         # Sets vertical and horizontal alignment on the grid within each allocated space. Needed on all grid otherwise some weird spacing issues can occur.
         grid.set_halign(1)
         grid.set_valign(1)
+
 
         # Define the left grid that will hold the CAEN logo
         grid_left = Gtk.Grid()
@@ -70,10 +72,7 @@ class CaenHelp(Gtk.Application):
         logo_frame.set_shadow_type(0)
         caen_logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/caen.png')
         logo_frame.add(caen_logo)
-        space_buffer = Gtk.Frame()
-        space_buffer.set_shadow_type(0)
-        grid_left.attach(space_buffer, 0, 0, 1, 4)
-        grid_left.attach(logo_frame, 0, 5, 1, 1)
+        grid_left.attach(logo_frame, 0, 0, 1, 1)
 
         ### Right Grid Contents ###
 
@@ -84,20 +83,16 @@ class CaenHelp(Gtk.Application):
         contact_frame.set_shadow_type(3)
         contact_frame.set_label("Contact")
         contact_frame.set_border_width(0)
-        #contact_frame.set_label_align(0.5,.5)
         contact_frame.add(contact_info)
-        
         grid_right.attach(contact_frame, 0, 0, 1, 2)
-        #grid_right.attach(contact_email, 0, 1, 1, 1)
-        # Info field
+
+        # System Info field
         sys_info_frame = Gtk.Frame()
         sys_info_frame.set_shadow_type(3)
         sys_info_frame.set_label("System Info")
-        #sys_info_frame.set_label_align(.5,.5)
         sys_info_frame.set_border_width(0)
-        # Set the get_sys_info call to True to only display data
+        # Set the get_sys_info call to True to only display data rather than collect
         sys_info = Gtk.Label(self.get_sys_info(True, UserName))
-        #sys_info.set_justify(0)
         sys_info_frame.add(sys_info)
         grid_right.attach(sys_info_frame, 0, 2, 1, 2)
 
@@ -111,10 +106,11 @@ class CaenHelp(Gtk.Application):
         faq_button.connect("clicked", self.visit_faq)
         grid_right.attach(faq_button, 0, 5, 1, 1)
 
-        # Determine if the Chat button should be shown 
-        # Currently set for summer hours
+        ### Determine if the Chat button should be shown ###############################
+        ### Currently set for summer 2018 hours ########################################
         now = datetime.datetime.now()
         if now.weekday() in range(0,4) and now.hour in range(8,17):
+        ################################################################################
             # Helpdesk Button
             chat_button = Gtk.Button.new_with_label("Chat with the Helpdesk")
             chat_button.connect("clicked", self.start_chat)
@@ -135,16 +131,21 @@ class CaenHelp(Gtk.Application):
         # Submit has been pressed and it's time to collect the data
         else:
             # Get all user sessions
-            active_sessions = call(["loginctl","list-sessions"])
+            active_sessions = Popen(["loginctl","list-sessions"]).communicate()[0]
             uid = getpwnam('%s' % UserName)[2]
             gid = getpwnam('%s' % UserName)[3]
-            pts_grps = "test" #call(["pts","mem" "%s" % UserName])
+            pts_grps = "test" #call(["pts","mem" "%s" % UserName]) ##TODO
             if os.path.exists("/home/%s" % UserName) and os.path.isdir("/home/%s" % UserName):
                 has_homedir = True
             else:
                 has_homedir = False
-            process_list = call(["ps","-ef"])
-            return ''.join(["Hostname: %s\n" % hostname.split(".")[0], "IP: ", "%s\n" % ip, "Username: %s\n" % UserName, "Active Sessions:\n %s\n" % active_sessions, "UID: %s\n" % uid, "GID: %s\n" % gid, "PTS Groups:\n %s\n" % pts_grps, "Has Homedir: %s\n" % has_homedir,"User Processes:\n %s\n" % process_list ])
+            # Save process list to local file because popen with PIPE results in escape characters being stripped
+            process_list = open("/tmp/caen-help-%s-process-list" % UserName, "w+")
+            # Pipe stdout to process_list file
+            Popen(['ps', '-ef'], stdout=process_list).communicate()[0]
+            # Reopen the file for reading, in read only mode for no particular reason. 
+            process_list = open("/tmp/caen-help-%s-process-list" % UserName, "r")
+            return ''.join(["Hostname: %s\n" % hostname.split(".")[0], "IP: ", "%s\n" % ip, "Username: %s\n" % UserName, "Active Sessions:\n %s\n" % active_sessions, "UID: %s\n" % uid, "GID: %s\n" % gid, "PTS Groups:\n %s\n" % pts_grps, "Has Homedir: %s\n" % has_homedir, "User Process List:\n %s" % process_list.read()])
 
     def start_chat(self, chat_button, data=None):
         webbrowser.open('https://caen.engin.umich.edu/contact/')
@@ -159,48 +160,83 @@ class CaenHelp(Gtk.Application):
             screenshot1_time = os.path.getmtime(screenshot1)
             screenshot2_time = os.path.getmtime(screenshot2)
             if screenshot2_time < screenshot1_time:
-                call(["gnome-screenshot","-f","/tmp/caen-help-%s-2.png" % UserName])
+                Popen(["gnome-screenshot","-f","/tmp/caen-help-%s-2.png" % UserName])
                 screenshot_button.set_label("Take another screenshot")
             else:
-                call(["gnome-screenshot","-f","/tmp/caen-help-%s-1.png" % UserName])
+                Popen(["gnome-screenshot","-f","/tmp/caen-help-%s-1.png" % UserName])
                 screenshot_button.set_label("Take another screenshot")
         elif screenshot1.is_file():
-            call(["gnome-screenshot","-f","/tmp/caen-help-%s-2.png" % UserName])
+            Popen(["gnome-screenshot","-f","/tmp/caen-help-%s-2.png" % UserName])
             screenshot_button.set_label("Take another screenshot")
         else:
-            call(["gnome-screenshot","-f","/tmp/caen-help-%s-1.png" % UserName])
+            Popen(["gnome-screenshot","-f","/tmp/caen-help-%s-1.png" % UserName])
             screenshot_button.set_label("Take another screenshot")
     def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName):
+        # Check whether or not report has been sent in the last 5 minutes
+        #TODO
+        
         # Convert the input buffer into text
         issue_description_input = IssueDescription.get_buffer()
         issue_description_bounds = issue_description_input.get_bounds()
         issue_description_text = issue_description_input.get_text(issue_description_bounds[0], issue_description_bounds[1], True)
-    
-        
+        # Get attachment configuration
+        # All threee files exist
+        if os.path.exists('/tmp/caen-help-%s-1.png' % UserName) and os.path.exists('/tmp/caen-help-%s-2.png' % UserName) and type(Attachment.get_filename()) is str:
+            attachment_conf = 5
+        # Screenshots with no attachment scenario
+        elif os.path.exists('/tmp/caen-help-%s-1.png' % UserName) and os.path.exists('/tmp/caen-help-%s-2.png' % UserName):
+            attachment_conf = 4
+        # 1 screenshot with attachment scenario
+        elif os.path.exists('/tmp/caen-help-%s-1.png' % UserName) and type(Attachment.get_filename()) is str:
+            attachment_conf = 3
+        # 1 screenshot without attachment scenario
+        elif os.path.exists('/tmp/caen-help-%s-1.png' % UserName):
+            attachment_conf = 2
+        # No screenshots, just attachment
+        elif type(Attachment.get_filename()) is str:
+            attachment_conf = 1
+        else:
+            attachment_conf = 0
         
         # Get status of whether or not the problem is with this computer
-        # True an false are flipped due to Index. Yes is the desired first and default result
+        # True and false are flipped due to Index. Yes (0) is the desired first and default result
         this_computer_response = ThisComputer.get_active()
         # If No is selected: skip system info collection and just send input + other attachments
         if this_computer_response:
-            print(f"%s is not the problem" % Attachment)
-        # If Yes is selected: gather system info and compile it with the response
+            if attachment_conf == 5:
+                Popen(['mail'])
+            elif attachment_conf == 4:
+                Popen(['mail'])
+            elif attachment_conf == 3:
+                Popen(['mail'])
+            elif attachment_conf == 2:
+                Popen(['mail'])
+            elif attachment_conf == 1:
+                Popen(['mail'])
+            else:
+                Popen(['mail'])
+            
+        # If Yes is selected: gather system info report and email with attachments
         else:
             report = self.get_sys_info(False, UserName)
-            print(f"%s" % report)
-            # Determine if there's an attachment
-            if type(Attachment.get_filename()) is str:
-                print(f"Issue Description:\n %s" % issue_description_text)
-            # Attachment is NoneType
+            if attachment_conf == 5:
+                Popen(['mail'])
+            elif attachment_conf == 4:
+                Popen(['mail'])
+            elif attachment_conf == 3:
+                Popen(['mail'])
+            elif attachment_conf == 2:
+                Popen(['mail'])
+            elif attachment_conf == 1:
+                Popen(['mail'])
             else:
-                print(f"Issue Description:\n %s" % issue_description_text)
-        # Collect rest of system information for submission
+                Popen(['mail'])
 
     def report_problem(self,report_button, UserName):
 
         # Creates a separate window
         window = Gtk.ApplicationWindow()
-        window.set_title("")
+        window.set_title("Problem Reporting")
         window.set_position(1)
         window.set_resizable(0)
         window.set_border_width(10)
@@ -242,7 +278,6 @@ class CaenHelp(Gtk.Application):
         # Screenshot Button 
         screenshot_button = Gtk.Button.new_with_label("Take a screenshot")
         screenshot_button.connect("clicked", self.take_screenshot, UserName)
-
         submit_button = Gtk.Button.new_with_label("Submit")
         submit_button.connect("clicked", self.submit_data, this_computer_response, issue_description, file_attachment, UserName)
 
