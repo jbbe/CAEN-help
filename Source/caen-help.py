@@ -173,15 +173,17 @@ class CaenHelp(Gtk.Application):
             Popen(["gnome-screenshot","-f","/tmp/caen-help-%s-1.png" % UserName])
             screenshot_button.set_label("Take another screenshot")
     def do_cleanup(self, UserName):
-        Popen(["rm", "/tmp/caen-help-%s-\*" % UserName])
-        receipt = open("/tmp/caen-help-%s-receipt" % UserName, "w+")
+        #call(['rm /tmp/caen-help-%s-*' % UserName])
+        uid = getpwnam('%s' % UserName)[2]
+        receipt = open(("/run/user/{uid}/caen-help-{username}-receipt").format(uid=uid,username=UserName), "w+")
         receipt.close()
 
     def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName):
         # Check whether or not report has been sent in the last 5 minutes
-        if os.path.exists('/tmp/caen-help-%s-receipt' % UserName):
+        uid = getpwnam('%s' % UserName)[2]
+        if os.path.exists(('/run/user/{uid}/caen-help-{username}-receipt').format(uid=uid,username=UserName)):
             # Check if receipt is older than 5 minutes
-            if os.path.getmtime('/tmp/caen-help-%s-receipt' % UserName) <= (time.time() - 5):
+            if os.path.getmtime(('/run/user/{uid}/caen-help-{username}-receipt').format(uid=uid,username=UserName)) <= (time.time() - 5):
                 self.main_quit()
         
         # Convert the input buffer into text
@@ -294,10 +296,6 @@ class CaenHelp(Gtk.Application):
         # Screenshot Hint
         screenshot_hint = Gtk.Label("While the button will continue to take screenshots,\nonly the two most recent screenshots are sent.")
         screenshot_hint.set_halign(1)
-        screenshot_hint.set_line_wrap(True)
-        screenshot_hint.set_line_wrap_mode(2)
-       # screenshot_hint.props.wrap = True
-        #screenshot_hint.set_width_chars(10)
         # Screenshot Button 
         screenshot_button = Gtk.Button.new_with_label("Take a screenshot")
         screenshot_button.connect("clicked", self.take_screenshot, UserName)
