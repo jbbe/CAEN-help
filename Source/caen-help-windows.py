@@ -1,8 +1,12 @@
 ### CAEN Help Application ###
 # Python3 and PyGObject
 # http://lazka.github.io/pgi-docs/index.html
-# Linux Version written by Dakota Lambert
-# Linux v0.95
+# To get running on Windows 10:
+# http://pygobject.readthedocs.io/en/latest/getting_started.html#windows-getting-started
+# Install the 64bit release
+
+# Windows Version written by and Dakota Lambert
+# Windows v.01
 
 import gi
 import sys
@@ -17,7 +21,8 @@ from gi.repository import Gtk
 from gi.repository import Gio
 from subprocess import Popen, PIPE # Run cannot be used in rhel 7 due to python 3.4
 from pathlib import Path
-from pwd import getpwnam  
+# Only line I had to remove to get it running on Windows
+#from pwd import getpwnam  
 
 class CaenHelp(Gtk.Application):
     def __init__(self):
