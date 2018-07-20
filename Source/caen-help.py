@@ -80,6 +80,7 @@ class CaenHelp(Gtk.Application):
         # Contact Info
         contact_info = Gtk.Label()
         contact_info.set_text(" (734) 764 2236" "\n" "caen@umich.edu")
+        contact_info.set_xalign(.5)
         contact_frame = Gtk.Frame()
         contact_frame.set_shadow_type(3)
         contact_frame.set_label("Contact")
@@ -94,6 +95,7 @@ class CaenHelp(Gtk.Application):
         sys_info_frame.set_border_width(0)
         # Set the get_sys_info call to True to only display data rather than collect
         sys_info = Gtk.Label(self.get_sys_info(True, UserName))
+        sys_info.set_xalign(.5)
         sys_info_frame.add(sys_info)
         grid_right.attach(sys_info_frame, 0, 2, 1, 2)
 
@@ -128,7 +130,7 @@ class CaenHelp(Gtk.Application):
         mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2))
         # Used for the system information field on the main window
         if DisplayOnly:
-            return f'{hostname.split(".")[0]} \n IP: {ip}'
+            return "{hostname} \n IP: {ip}".format(hostname=hostname.split(".")[0], ip=ip)
         # Submit has been pressed and it's time to collect the data
         else:
             # Get all user sessions
@@ -215,7 +217,7 @@ class CaenHelp(Gtk.Application):
         # If No is selected: skip system info collection and just send input + other attachments
         if this_computer_response:
             if attachment_conf == 5:
-                print(f"%s" % Attachment.get_filename())
+                print ("{attachment}").format(attachment=Attachment.get_filename())
                 send_email = run(["mail","-s", "CAEN Problem Report from %s" % UserName, "drlamb@umich.edu","-a","/tmp/caen-help-%s-1.png" % UserName, "-a", "/tmp/caen-help-%s-2.png" % UserName, "-a", "Attachment.get_filename()"], stdout=PIPE, input='%s' % issue_description_text, encoding='ascii')
                 self.do_cleanup(UserName)
             elif attachment_conf == 4:
