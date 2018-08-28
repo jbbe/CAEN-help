@@ -2,7 +2,7 @@
 # Python3 and PyGObject
 # http://lazka.github.io/pgi-docs/index.html
 # Linux Version written by Dakota Lambert
-# Linux v0.95
+# Linux v0.98
 
 import gi
 import sys
@@ -112,7 +112,7 @@ class CaenHelp(Gtk.Application):
         ### Currently set for summer 2018 hours ########################################
         # Perhaps link to google caledar for live status of the hotline chat
         now = datetime.datetime.now()
-        if now.weekday() in range(0,4) and now.hour in range(8,17):
+        if now.weekday() in range(0,4) and now.hour in range(8,20):
         ################################################################################
             # Helpdesk Button
             chat_button = Gtk.Button.new_with_label("Chat with the Helpdesk")
@@ -198,7 +198,7 @@ class CaenHelp(Gtk.Application):
         receipt.close()
         # Kill the report window
         # I want to eventually add a green submitted button or some other form of feedback
-        self.report_problem.destroy()
+        
     # Function to gather up and submit the data for further filtering ####################
     # Checks if receipt file exists - need to implement some form of warning to the user
     # Currently submits data via email. Future solutions might include hooking directly into Jira's or X's api for reporting issues
@@ -207,7 +207,7 @@ class CaenHelp(Gtk.Application):
     # IssueDescription - raw input buffer that has to be processed
     # Attachment - file selected in the report window. If no file is selected this object with be a None type
     # UserName - username of current user
-    def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName):
+    def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName, Window):
         # Check whether or not report has been sent in the last 5 minutes
         uid = getpwnam("{username}".format(username=UserName))[2]
        # if os.path.exists(('/run/user/{uid}/caen-help-{username}-receipt').format(uid=uid,username=UserName)):
@@ -248,8 +248,7 @@ class CaenHelp(Gtk.Application):
         if data_collection_is_off:
             send_email = Popen(["mail","-s","CAEN Issue Report from {username}".format(username=UserName), "drlamb@umich.edu", "{attachments}".format(attachments=attachments)], stdout=PIPE, stdin=PIPE)
             #send_email.communicate("{issue_description}".format(issue_description=issue_description_text))
-            self.do_cleanup(UserName)
-            
+
         # data collection is on, indicating that the problem is this machine
         else:
             # Gather system report
@@ -258,8 +257,23 @@ class CaenHelp(Gtk.Application):
             attachments += " -a /tmp/caen-help-{username}-report ".format(username=UserName)
             send_email = Popen(["mail","-s","CAEN Issue Report from {username}".format(username=UserName), "drlamb@umich.edu", "{attachments}".format(attachments=attachments)], stdout=PIPE, stdin=PIPE)
             #send_email_body = send_email.communicate(input="{issue_description}".format(issue_description=issue_description_text))
-            self.do_cleanup(UserName)
-            
+
+        # Submission success check
+        # Submission confirmation Popup
+        submitted = Gtk.Dialog()
+        submitted.add_buttons(Gtk.STOCK_OK, 1)
+        label = Gtk.Label('Your issue has been sucessfully reported. Press OK to close CAEN Help.')
+        label.show()
+        submitted.vbox.pack_start(label, False, False, 0)
+        answer = submitted.run()
+        submitted.destroy()
+        # Delete temporary files and write the receipt
+        self.do_cleanup(UserName)
+        # Closes the report a problem window
+        Window.close()
+        # Quits CAEN Help
+        self.quit()
+
     # Function to open the second window to collect issue description ###################
     def report_problem(self,report_button, UserName):
 
@@ -304,7 +318,7 @@ class CaenHelp(Gtk.Application):
         screenshot_button = Gtk.Button.new_with_label("Take a screenshot")
         screenshot_button.connect("clicked", self.take_screenshot, UserName)
         submit_button = Gtk.Button.new_with_label("Submit")
-        submit_button.connect("clicked", self.submit_data, data_collection_is_off, issue_description, file_attachment, UserName)
+        submit_button.connect("clicked", self.submit_data, data_collection_is_off, issue_description, file_attachment, UserName, window)
 
         # Attach every question and answer to the grid
         grid.attach(question1, 0, 0, 1, 1)
@@ -321,6 +335,7 @@ class CaenHelp(Gtk.Application):
         # Add the grid to the window and tell the window to show all
         window.add(grid)
         window.show_all()
+
 
 if __name__ == '__main__':
     app = CaenHelp()
