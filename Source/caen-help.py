@@ -2,7 +2,7 @@
 # Python3 and PyGObject
 # http://lazka.github.io/pgi-docs/index.html
 # Linux Version written by Dakota Lambert
-# Linux v0.98 - Fall 2018
+# Linux v0.99
 
 import gi
 import sys
@@ -17,7 +17,7 @@ from gi.repository import Gtk
 from gi.repository import Gio
 from subprocess import Popen, PIPE # Run cannot be used in rhel 7 due to python 3.4
 from pathlib import Path
-from pwd import getpwnam  
+from pwd import getpwnam
 
 class CaenHelp(Gtk.Application):
     def __init__(self):
@@ -32,10 +32,9 @@ class CaenHelp(Gtk.Application):
         window.set_border_width(10)
 
         # Get UserName of currently logged in user
-        #UserName = os.getlogin()]
-        UserName = "drlamb"
-        
-        # This application is configured as three grids. One two column grid with each of its two columns containing another grid. 
+        UserName = os.getlogin()
+
+        # This application is configured as three grids. One two column grid with each of its two columns containing another grid.
 
         # Create and define the main Gtk.Grid
         grid = Gtk.Grid()
@@ -68,6 +67,7 @@ class CaenHelp(Gtk.Application):
         # Establish a frame around the caen logo
         logo_frame = Gtk.Frame()
         logo_frame.set_shadow_type(0)
+        # TODO
         caen_logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/caen.png')
         logo_frame.add(caen_logo)
         grid_left.attach(logo_frame, 0, 0, 1, 1)
@@ -82,7 +82,7 @@ class CaenHelp(Gtk.Application):
         contact_info.set_xalign(.5)
         contact_frame = Gtk.Frame()
         contact_frame.set_shadow_type(3)
-        contact_frame.set_label("Contact")
+        contact_frame.set_label("Contact Info")
         contact_frame.set_border_width(0)
         contact_frame.add(contact_info)
         grid_right.attach(contact_frame, 0, 0, 1, 2)
@@ -124,7 +124,7 @@ class CaenHelp(Gtk.Application):
         # Attach the main grid to window and tell window to display everything attached
         window.add(grid)
         window.show_all()
-    
+
     # Function to get system information ###############################################
     # DisplayOnly - bool to control wether or not system information is collected
     # UserName - username of current user
@@ -152,7 +152,7 @@ class CaenHelp(Gtk.Application):
             process_list = open("/tmp/caen-help-{username}-process-list".format(uid=uid,username=UserName), "w+")
             # Pipe stdout to process_list file
             Popen(['ps', '-ef'], stdout=process_list).communicate()[0]
-            # Reopen the file for reading, in read only mode for no particular reason. 
+            # Reopen the file for reading, in read only mode for no particular reason.
             process_list = open("/tmp/caen-help-{username}-process-list".format(username=UserName), "r")
             report = open("/tmp/caen-help-{username}-report".format(username=UserName), "w+")
             report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]), "IP: ", "{ip}\n".format(ip=ip), "Username: %s\n" % UserName, "Active Sessions:\n {active_sessions}".format(active_sessions=active_sessions), "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid), "PTS Groups:\n {pts_grps}\n".format(pts_grps=pts_grps), "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir), "User Process List:\n {process_list}s\n".format(process_list=process_list.read())]))
@@ -188,17 +188,17 @@ class CaenHelp(Gtk.Application):
             Popen(["gnome-screenshot", "-f","/tmp/caen-help-{username}-1.png".format(username=UserName)])
             screenshot_button.set_label("Take another screenshot")
     # Function to remove all temporary files #############################################
-    # Writes a "receipt" to the $XDG_RUNTIME_DIR that submit_data() checks for to ensure 
+    # Writes a "receipt" to the $XDG_RUNTIME_DIR that submit_data() checks for to ensure
     # that two reports cannot be sent within 5 minutes of each other to avoid abuse
     def do_cleanup(self, UserName):
-        #call(['rm /tmp/caen-help-%s-*' % UserName])
+        #Popen(['rm /tmp/caen-help-%s-*' % UserName])
         # Add rm with wildcard to delete temp files
         uid = getpwnam("{username}".format(username=UserName))[2]
         receipt = open(("/run/user/{uid}/caen-help-{username}-receipt").format(uid=uid,username=UserName), "w+")
         receipt.close()
         # Kill the report window
         # I want to eventually add a green submitted button or some other form of feedback
-        
+
     # Function to gather up and submit the data for further filtering ####################
     # Checks if receipt file exists - need to implement some form of warning to the user
     # Currently submits data via email. Future solutions might include hooking directly into Jira's or X's api for reporting issues
@@ -207,7 +207,6 @@ class CaenHelp(Gtk.Application):
     # IssueDescription - raw input buffer that has to be processed
     # Attachment - file selected in the report window. If no file is selected this object with be a None type
     # UserName - username of current user
-    # Window - the problem report window. Used here to close the window upon confirming submission, also quits CAEN Help
     def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName, Window):
         # Check whether or not report has been sent in the last 5 minutes
         uid = getpwnam("{username}".format(username=UserName))[2]
@@ -215,49 +214,58 @@ class CaenHelp(Gtk.Application):
             # Check if receipt is older than 5 minutes
           #  if os.path.getmtime(('/run/user/{uid}/caen-help-{username}-receipt').format(uid=uid,username=UserName)) <= (time.time() - 5):
            #     self.main_quit()
-        # Generate default email flags  
-        mail_flags = ''.join(["-s ", "\"CAEN Problem Report from {username}\"".format(username=UserName)])
-        attachments= ""
+
        # Convert the input buffer into text
         issue_description_input = IssueDescription.get_buffer()
         issue_description_bounds = issue_description_input.get_bounds()
         issue_description_text = issue_description_input.get_text(issue_description_bounds[0], issue_description_bounds[1], True)
+        issue_description_file = open("/tmp/caen-help-{username}-desc".format(username=UserName), "w")
+        issue_description_file.write("Issue Description: {issue}".format(issue=issue_description_text))
+        issue_description_file.close()
+
+        ### Generate Default Mail Command Args ###
+        mail_command = 'mailx'
+        mail_flag = '-s'
+        mail_subject = '"CAEN Issue Report from  {username}"'.format(username=UserName)
+        email_receipient = 'drlamb@umich.edu'
+        email_body = "< /tmp/caen-help-{username}-desc".format(username=UserName)
+        attachments= ""
         # Get attachment configuration
         # All threee files exist
         if os.path.exists("/tmp/caen-help-{username}-1.png".format(username=UserName)) and os.path.exists("/tmp/caen-help-{username}-2.png".format(username=UserName)) and type(Attachment.get_filename()) is str:
-            attachments = " -a /tmp/caen-help-{username}-1.png -a /tmp/caen-help-{username}-2.png -a {attachment}".format(username=UserName,attachment=Attachment.get_filename())
+            attachments = "-a /tmp/caen-help-{username}-1.png -a /tmp/caen-help-{username}-2.png -a {attachment}".format(username=UserName,attachment=Attachment.get_filename())
         # Screenshots with no attachment scenario
         elif os.path.exists("/tmp/caen-help-{username}-1.png".format(username=UserName)) and os.path.exists("/tmp/caen-help-{username}-2.png".format(username=UserName)):
-            attachments = " -a /tmp/caen-help-{username}-1.png -a /tmp/caen-help-{username}-2.png".format(username=UserName)
+            attachments = "-a /tmp/caen-help-{username}-1.png -a /tmp/caen-help-{username}-2.png".format(username=UserName)
         # 1 screenshot with attachment scenario
         elif os.path.exists("/tmp/caen-help-{username}-1.png".format(username=UserName)) and type(Attachment.get_filename()) is str:
-            attachments = " -a /tmp/caen-help-{username}-1.png -a {attachment}".format(username=UserName,attachment=Attachment.get_filename())
+            attachments = "-a /tmp/caen-help-{username}-1.png -a {attachment}".format(username=UserName,attachment=Attachment.get_filename())
         # 1 screenshot without attachment scenario
         elif os.path.exists("/tmp/caen-help-{username}-1.png".format(username=UserName)):
-            attachments = " -a /tmp/caen-help-{username}-1.png".format(username=UserName)
+            attachments = "-a /tmp/caen-help-{username}-1.png".format(username=UserName)
         # No screenshots, just attachment
         elif type(Attachment.get_filename()) is str:
-            attachments = " -a {attachment}".format(attachment=Attachment.get_filename())
+            attachments = "-a {attachment}".format(attachment=Attachment.get_filename())
         # Just to be safe
         else:
             attachments = ""
-        
+
         # Get status of whether or not the problem is with this computer
         # True and false are flipped due to Index. Yes (0) is the desired first and default result
         data_collection_is_off = ThisComputer.get_active()
         # If No is selected: skip system info collection and just send input + other attachments
         if data_collection_is_off:
-            send_email = Popen(["mail","-s","CAEN Issue Report from {username}".format(username=UserName), "drlamb@umich.edu", "{attachments}".format(attachments=attachments)], stdout=PIPE, stdin=PIPE)
-            #send_email.communicate("{issue_description}".format(issue_description=issue_description_text))
-
+            draft_email = ' '.join([mail_command, mail_flag, mail_subject, email_receipient, attachments, email_body])
+            send_email = Popen(draft_email, shell=True)
         # data collection is on, indicating that the problem is this machine
         else:
             # Gather system report
             self.get_sys_info(False, UserName)
-            # Add the report into the attachment manifold 
-            attachments += " -a /tmp/caen-help-{username}-report ".format(username=UserName)
-            send_email = Popen(["mail","-s","CAEN Issue Report from {username}".format(username=UserName), "drlamb@umich.edu", "{attachments}".format(attachments=attachments)], stdout=PIPE, stdin=PIPE)
-            #send_email_body = send_email.communicate(input="{issue_description}".format(issue_description=issue_description_text))
+            attachments += "-a /tmp/caen-help-{username}-report".format(username=UserName)
+            draft_email = ' '.join([mail_command, mail_flag, mail_subject, email_receipient, attachments, email_body])
+            send_email = Popen(draft_email, shell=True)
+
+
 
         # Submission success check
         # Submission confirmation Popup
@@ -272,7 +280,7 @@ class CaenHelp(Gtk.Application):
         self.do_cleanup(UserName)
         # Closes the report a problem window
         Window.close()
-        # Quits the CAEN Help application itself
+        # Quits CAEN Help
         self.quit()
 
     # Function to open the second window to collect issue description ###################
@@ -315,7 +323,7 @@ class CaenHelp(Gtk.Application):
         # Screenshot Hint
         screenshot_hint = Gtk.Label("Press this button to take a screenshot of the entire screen.\nOnly the two most recent screenshots are sent.")
         screenshot_hint.set_halign(1)
-        # Screenshot Button 
+        # Screenshot Button
         screenshot_button = Gtk.Button.new_with_label("Take a screenshot")
         screenshot_button.connect("clicked", self.take_screenshot, UserName)
         submit_button = Gtk.Button.new_with_label("Submit")
