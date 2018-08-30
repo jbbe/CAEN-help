@@ -2,7 +2,7 @@
 # Python3 and PyGObject
 # http://lazka.github.io/pgi-docs/index.html
 # Linux Version written by Dakota Lambert
-# Linux v0.98
+# Linux v0.98 - Fall 2018
 
 import gi
 import sys
@@ -207,6 +207,7 @@ class CaenHelp(Gtk.Application):
     # IssueDescription - raw input buffer that has to be processed
     # Attachment - file selected in the report window. If no file is selected this object with be a None type
     # UserName - username of current user
+    # Window - the problem report window. Used here to close the window upon confirming submission, also quits CAEN Help
     def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName, Window):
         # Check whether or not report has been sent in the last 5 minutes
         uid = getpwnam("{username}".format(username=UserName))[2]
@@ -271,7 +272,7 @@ class CaenHelp(Gtk.Application):
         self.do_cleanup(UserName)
         # Closes the report a problem window
         Window.close()
-        # Quits CAEN Help
+        # Quits the CAEN Help application itself
         self.quit()
 
     # Function to open the second window to collect issue description ###################
