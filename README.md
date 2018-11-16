@@ -4,7 +4,7 @@ A simple problem reporting application written in python targeting Linux and Win
 ## Linux
 Writtin using GTK/PyGObject
 
-[Getting Started Documentatio](https://pygobject.readthedocs.io/en/latest/getting_started.html)
+[Getting Started Documentation](https://pygobject.readthedocs.io/en/latest/getting_started.html)
 
 [PyGObject API Reference](https://lazka.github.io/pgi-docs/)
 
