@@ -8,6 +8,10 @@ Writtin using GTK/PyGObject
 
 [PyGObject API Reference](https://lazka.github.io/pgi-docs/)
 
+[[https://github.com/drlamb/CAEN-help/blob/master/Images/v.98.png|alt=caen-help1]]
+
+[[https://github.com/drlamb/CAEN-help/blob/master/Images/v.98(2).png|alt=caen-help2]]
+
 ## Windows
 Written using PyQT
 
