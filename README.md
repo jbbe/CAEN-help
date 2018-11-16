@@ -1,4 +1,4 @@
-# caen-help
+# CAEN-help
 A simple problem reporting application written in python targeting Linux and Windows
 
 ## Linux
