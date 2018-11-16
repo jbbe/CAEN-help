@@ -2,7 +2,7 @@
 A simple problem reporting application written in python targeting Linux and Windows
 
 ## Linux
-Writtin using GTK/PyGObject
+Written using GTK/PyGObject
 
 [Getting Started Documentation](https://pygobject.readthedocs.io/en/latest/getting_started.html)
 
