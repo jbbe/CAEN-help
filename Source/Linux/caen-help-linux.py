@@ -1,8 +1,7 @@
 ### CAEN Help Application ###
-# Python3 and PyGObject
-# http://lazka.github.io/pgi-docs/index.html
-# Linux Version written by Dakota Lambert
 # Linux v0.98 - Fall 2018
+# Written by Dakota Lambert
+#############################
 
 import gi
 import sys
@@ -68,7 +67,7 @@ class CaenHelp(Gtk.Application):
         # Establish a frame around the caen logo
         logo_frame = Gtk.Frame()
         logo_frame.set_shadow_type(0)
-        caen_logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/caen.png')
+        caen_logo = Gtk.Image.new_from_file('/home/drlamb/git/caen-help/Source/Linux/caen.png')
         logo_frame.add(caen_logo)
         grid_left.attach(logo_frame, 0, 0, 1, 1)
 
@@ -110,7 +109,9 @@ class CaenHelp(Gtk.Application):
 
         ### Determine if the Chat button should be shown ###############################
         ### Currently set for summer 2018 hours ########################################
+        #TODO
         # Perhaps link to google caledar for live status of the hotline chat
+        # Would need api access key
         now = datetime.datetime.now()
         if now.weekday() in range(0,4) and now.hour in range(8,20):
         ################################################################################
@@ -200,14 +201,17 @@ class CaenHelp(Gtk.Application):
         # I want to eventually add a green submitted button or some other form of feedback
         
     # Function to gather up and submit the data for further filtering ####################
-    # Checks if receipt file exists - need to implement some form of warning to the user
-    # Currently submits data via email. Future solutions might include hooking directly into Jira's or X's api for reporting issues
+    # Checks if receipt file exists - need to implement some form of warning to the user #TODO
+    # Currently submits data via email. Future solutions might include hooking directly into Jira's or X's api for reporting issues 
     # Takes:
     # ThisComputer - (bool) - reversed due to Gtk.ComboBox() index. 0 indicates the problem is with this machine
     # IssueDescription - raw input buffer that has to be processed
-    # Attachment - file selected in the report window. If no file is selected this object with be a None type
+    # Attachment - file selected in the report window. If no file is selected this object with be a None type 
     # UserName - username of current user
     # Window - the problem report window. Used here to close the window upon confirming submission, also quits CAEN Help
+    #
+    #TODO As we discussed during the meeting, the email/attachment system needs to be rewritten/reimplemented, preferably with smtplib as
+    # that is what the Windows version uses. 
     def submit_data(self, submit_button, ThisComputer, IssueDescription, Attachment, UserName, Window):
         # Check whether or not report has been sent in the last 5 minutes
         uid = getpwnam("{username}".format(username=UserName))[2]
@@ -259,8 +263,8 @@ class CaenHelp(Gtk.Application):
             send_email = Popen(["mail","-s","CAEN Issue Report from {username}".format(username=UserName), "drlamb@umich.edu", "{attachments}".format(attachments=attachments)], stdout=PIPE, stdin=PIPE)
             #send_email_body = send_email.communicate(input="{issue_description}".format(issue_description=issue_description_text))
 
-        # Submission success check
-        # Submission confirmation Popup
+        # Submission success check #TODO
+        # Submission confirmation Popup #TODO
         submitted = Gtk.Dialog()
         submitted.add_buttons(Gtk.STOCK_OK, 1)
         label = Gtk.Label('Your issue has been sucessfully reported. Press OK to close CAEN Help.')
