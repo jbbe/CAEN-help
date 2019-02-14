@@ -37,8 +37,8 @@ class CaenHelp(Gtk.Application):
         window.set_border_width(10)
 
         # Get UserName of currently logged in user
-        #UserName = os.getlogin()]
-        UserName = "josh"
+        UserName = os.getlogin()]
+        # UserName = "josh"
         
         # This application is configured as three grids. One two column grid with each of its two columns containing another grid. 
 
