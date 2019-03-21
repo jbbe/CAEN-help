@@ -37,7 +37,7 @@ def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
+        s.connect(('10.10.10.10', 1))
         IP = s.getsockname()[0]
     except:
         IP = '127.0.0.1'
@@ -258,12 +258,16 @@ class CaenHelp(Gtk.Application):
         ## Checks if receipt file exists
         # need to implement some form of warning to the user #TODO e()[0]
         active_sessions = Popen(["loginctl", "list-sessions"]).communicate()[0]
-        # TODO do we want both in the report
         macaddr_hex = uuid.UUID(int=uuid.getnode()).hex[-12:]
-        mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2)) #TODO unused
+        mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2))
         uid = getpwnam('%s' % UserName)[2]
         gid = getpwnam('%s' % UserName)[3]
-        pts_grps = "test" #call(["pts","mem" "%s" % UserName]) ##TODO
+        pts_grps = "test" 
+        if os.path.exists('/etc/redhat-release'):
+            call(["pts","mem" "%s" % UserName])
+            ##TODO this command is native to rhel does not work on caenbuntu implement os check and run pts only on rhel
+        #TODO implement id and sanitize user groups maybe remove nums
+        # call id output caen-software-groups
         home_path = "/home/{username}".format(username=UserName)
         has_homedir = bool(os.path.exists(home_path) and os.path.isdir(home_path))
         # Save process list to local file because popen with PIPE results
@@ -486,7 +490,6 @@ class CaenHelp(Gtk.Application):
         label = Gtk.Label('Your issue has been sucessfully reported. '
                           'Press OK to close CAEN Help.')
         label.show()
-        # TODO what does this line do?
         submitted.vbox.pack_start(label, False, False, 0)
         submitted.run()
         submitted.destroy()
