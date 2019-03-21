@@ -33,6 +33,18 @@ from gi.repository import Gtk
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
 
 class CaenHelp(Gtk.Application):
     """App to report computer problems and connect user with resources."""
@@ -233,7 +245,10 @@ class CaenHelp(Gtk.Application):
     def get_sys_info(self, DisplayOnly, UserName):
         """Either return hostname and Ip address or write info to file."""
         hostname = socket.gethostname()
-        ip = socket.gethostbyname(hostname)
+        # get ip address from what is not loopback pref
+        # or hardcode get en0
+        # ip = socket.gethostbyname(hostname)
+        ip = get_ip()
         # Used for the system information field on the main window
         if DisplayOnly:
             # Return the hostname stripped of the .engin.umich.edu and the IP
@@ -262,7 +277,7 @@ class CaenHelp(Gtk.Application):
         report = open("/tmp/caen-help-{username}-report".format(username=UserName), "w+")
         report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]),
                               "IP: {ip}\n".format(ip=ip),
-                              "Mac: {mac} Hex: {hexMac}\n".format(mac=mac, hexMac=macaddr_hex),
+                              "Mac: {mac} \n".format(mac=mac),
                               "Username: %s\n" % UserName,
                               "Active Sessions:\n {active_sessions}"
                               .format(active_sessions=active_sessions),
