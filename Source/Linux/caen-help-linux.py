@@ -269,6 +269,7 @@ class CaenHelp(Gtk.Application):
             Popen(["pts","mem", UserName], stdout=pts_grps)
             Popen(["pts","mem", UserName])
             pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r+")
+            pts_grps = pts_grps.read()
         else:
             
             pts_grps = "Using caenbuntu" 
@@ -295,7 +296,7 @@ class CaenHelp(Gtk.Application):
                               "Active Sessions:\n {active_sessions}"
                               .format(active_sessions=active_sessions),
                               "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
-                              "PTS Groups:\n {pts_grps}\n".format(pts_grps=pts_grps.read()),
+                              "PTS Groups:\n {pts_grps}\n".format(pts_grps=pts_grps),
                               "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                               "User Process List:\n {process_list}s\n"
                               .format(process_list=process_list.read())]))
