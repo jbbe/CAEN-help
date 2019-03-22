@@ -262,16 +262,17 @@ class CaenHelp(Gtk.Application):
         mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2))
         uid = getpwnam('%s' % UserName)[2]
         gid = getpwnam('%s' % UserName)[3]
+        pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "w+")
         if os.path.exists('/etc/redhat-release'):
             # print("On redhat")
-            pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "w+")
-            # print(pts_grps)
+            print(pts_grps)
             Popen(["pts","mem", UserName], stdout=pts_grps)
-            Popen(["pts","mem", UserName])
-            pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r+")
-            pts_grps = pts_grps.read()
+            # pts_grps_r = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
+            # print(pts_grps_r)
+            # pts_grps = pts_grps_r.read()
+            print(pts_grps)
         else:
-            
+            # TODO write to file something for buntu
             pts_grps = "Using caenbuntu" 
             ##TODO this command is native to rhel does not work on caenbuntu implement os check and run pts only on rhel
         # TODO implement id and sanitize user groups maybe remove nums
@@ -288,6 +289,7 @@ class CaenHelp(Gtk.Application):
         # Reopen the file for reading, in read only mode for no particular reason.
         process_list = open("/tmp/caen-help-{username}-process-list".format(username=UserName), "r")
 
+        pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
         report = open("/tmp/caen-help-{username}-report".format(username=UserName), "w+")
         report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]),
                               "IP: {ip}\n".format(ip=ip),
@@ -296,7 +298,7 @@ class CaenHelp(Gtk.Application):
                               "Active Sessions:\n {active_sessions}"
                               .format(active_sessions=active_sessions),
                               "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
-                              "PTS Groups:\n {pts_grps}\n".format(pts_grps=pts_grps),
+                              "PTS Groups:\n {pts_grps}\n".format(pts_grps=pts_grps.read()),
                               "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                               "User Process List:\n {process_list}s\n"
                               .format(process_list=process_list.read())]))
