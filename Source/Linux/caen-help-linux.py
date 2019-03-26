@@ -283,7 +283,7 @@ class CaenHelp(Gtk.Application):
                                   "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
                                   "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                                   "{pts_process}".format(pts_process=proc_n_pts.read()),
-                                  "\License Groups:\n{groups}".format(groups=parsed_ids)]))
+                                  "License Groups:\n{groups}".format(groups=parsed_ids)]))
         proc_n_pts.close()
         report.close()
 
