@@ -257,11 +257,14 @@ class CaenHelp(Gtk.Application):
             Popen(["pts", "mem", UserName], stdout=proc_n_pts).communicate()[0]
         Popen(["echo", "User Process List:"], stdout=proc_n_pts).communicate()[0]
         Popen(['ps', '-ef'], stdout=proc_n_pts).communicate()[0]
-        # gets and sanitizes all groups which machine belongs to
+        # Get and sanitize all groups which machine belongs to
+        # TODO remove gid uid 
         caen_ids = open('/tmp/caen-ids', "w+")
         rawIds = Popen(["id"], stdout=caen_ids).communicate()[0]
         with open('/tmp/caen-ids', "r") as f:
-            parsed_ids = "\n".join([id.strip() for id in f.read().split(',')])
+            raw_list = [id.strip() for id in f.read().split(',')]
+            del raw_list[0]
+            parsed_ids = "\n".join(raw_list)
         # TODO implement id and sanitize user groups maybe remove nums
         # call id output caen-software-groups
         home_path = "/home/{username}".format(username=UserName)
@@ -280,7 +283,7 @@ class CaenHelp(Gtk.Application):
                                   "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
                                   "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                                   "{pts_process}".format(pts_process=proc_n_pts.read()),
-                                  "\nMachine Groups:\n{groups}".format(groups=parsed_ids)]))
+                                  "\License Groups:\n{groups}".format(groups=parsed_ids)]))
         proc_n_pts.close()
         report.close()
 
