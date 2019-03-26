@@ -35,16 +35,16 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 def get_ip():
     """Return ip address of machine, not loopback ip."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't  have to be reachable
         # will most likely send error message
-        s.connect(('10.10.10.10', 1))
+        sock.connect(('10.10.10.10', 1))
         IP = s.getsockname()[0]
     except:
         IP = '127.0.0.1'
     finally:
-        s.close()
+        sock.close()
     return IP
 
 
@@ -233,7 +233,7 @@ class CaenHelp(Gtk.Application):
 
 
     # Function to get system information #####################################
-    # DisplayOnly - bool to control wether or not system information is collected
+    # DisplayOnly - bool to control whether all sys_info is gathered or only host and ip
     # UserName - username of current user
     def get_sys_info(self, DisplayOnly, UserName):
         """Either return hostname and Ip address or write info to file."""
@@ -257,16 +257,15 @@ class CaenHelp(Gtk.Application):
             Popen(["pts", "mem", UserName], stdout=proc_n_pts).communicate()[0]
         Popen(["echo", "User Process List:"], stdout=proc_n_pts).communicate()[0]
         Popen(['ps', '-ef'], stdout=proc_n_pts).communicate()[0]
+
         # Get and sanitize all groups which machine belongs to
-        # TODO remove gid uid 
         caen_ids = open('/tmp/caen-ids', "w+")
-        rawIds = Popen(["id"], stdout=caen_ids).communicate()[0]
+        caen_ids.close()
+        Popen(["id"], stdout=caen_ids).communicate()[0]
         with open('/tmp/caen-ids', "r") as f:
             raw_list = [id.strip() for id in f.read().split(',')]
             del raw_list[0]
             parsed_ids = "\n".join(raw_list)
-        # TODO implement id and sanitize user groups maybe remove nums
-        # call id output caen-software-groups
         home_path = "/home/{username}".format(username=UserName)
         has_homedir = bool(os.path.exists(home_path) and os.path.isdir(home_path))
         # Save process list to local file because popen with PIPE results
@@ -283,7 +282,7 @@ class CaenHelp(Gtk.Application):
                                   "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
                                   "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                                   "{pts_process}".format(pts_process=proc_n_pts.read()),
-                                  "License Groups:\n{groups}".format(groups=parsed_ids)]))
+                                  "Caen Software License Groups:\n{grps}".format(grps=parsed_ids)]))
         proc_n_pts.close()
         report.close()
 
@@ -346,6 +345,7 @@ class CaenHelp(Gtk.Application):
         screenshot2 = "/tmp/caen-help-{username}-2.png".format(username=UserName)
         report_path = "/tmp/caen-help-{username}-report".format(username=UserName)
         process_list = "/tmp/caen-help-{username}-list".format(username=UserName)
+        license_file = "/tmp/caen-ids"
 
         # If any of the files exist we remove them
         if os.path.exists(screenshot1):
@@ -356,6 +356,8 @@ class CaenHelp(Gtk.Application):
             os.remove(report_path)
         if os.path.exists(process_list):
             os.remove(process_list)
+        if os.path.exists(license_file):
+            os.remove(license_file)
 
         uid = getpwnam("{username}".format(username=UserName))[2]
         receipt = open(("/run/user/{uid}/caen-help-{username}-receipt")
