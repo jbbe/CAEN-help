@@ -34,9 +34,11 @@ from gi.repository import Gtk
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 def get_ip():
+    """Return ip address of machine, not loopback ip."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # doesn't even have to be reachable
+        # doesn't  have to be reachable
+        # will most likely send error message
         s.connect(('10.10.10.10', 1))
         IP = s.getsockname()[0]
     except:
@@ -46,23 +48,21 @@ def get_ip():
     return IP
 
 
+def is_in_time_range(start, end):
+    """Return true if now is within start and end times."""
+    # does the midnight case even matter?
+    # we'll never be open then anyways
+    now = datetime.datetime.now()
+    if start < end:
+        return now >= start and now <= end
+    return now >= start or now <= end
+
+
 class CaenHelp(Gtk.Application):
     """App to report computer problems and connect user with resources."""
     def __init__(self):
         Gtk.Application.__init__(self)
 
-
-    def is_in_time_range(self, start, end):
-        """Return true if now is within start and end times."""
-        # does the midnight case even matter?
-        # we'll never be open then anyways
-        now = datetime.datetime.now()
-        if start < end:
-            return now >= start and now <= end
-        return now >= start or now <= end
-
-
-    # TODO test hours
     def desk_is_open(self):
         """Return true if help desk is open based on google calendar."""
         creds = None
@@ -76,12 +76,10 @@ class CaenHelp(Gtk.Application):
          # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                # print('a')
                 creds.refresh(Request())
             else:
                 # it will refresh the credentials if they are expired
                 # but will just not display if it can't
-                # TODO maybe add a reporting aspect to this
                 return False
             # Save the credentials for the next run
             with open('token.pickle', 'wb') as token:
@@ -96,15 +94,12 @@ class CaenHelp(Gtk.Application):
                                               maxResults=3, singleEvents=True,
                                               orderBy='startTime').execute()
         if not events_result:
-            print('aint happenin')
             return False
 
         events = events_result.get('items', [])
         current_event = events[0]
 
-        # print((current_event['summary']))
         if not current_event['summary']:
-            print('no summary')
             return False
 
         if (current_event['summary'] == 'walkup') or (current_event['summary'] == 'phone'):
@@ -112,7 +107,7 @@ class CaenHelp(Gtk.Application):
                                                '%Y-%m-%dT%H:%M:%S-04:00')
             end = datetime.datetime.strptime(current_event['end']['dateTime'],
                                              '%Y-%m-%dT%H:%M:%S-04:00')
-            if self.is_in_time_range(start, end):
+            if is_in_time_range(start, end):
                 # check if meeting is also happening should implement by
                 # pulling three events and checking if any are
                 # meeting and if so check if its hapening currently
@@ -125,11 +120,9 @@ class CaenHelp(Gtk.Application):
                                                              '%Y-%m-%dT%H:%M:%S-04:00')
                         m_end = datetime.datetime.strptime(event['end']['dateTime'],
                                                            '%Y-%m-%dT%H:%M:%S-04:00')
-                        if self.is_in_time_range(m_start, m_end):
-                            print('meeting')
+                        if is_in_time_range(m_start, m_end):
                             return False
                 return True
-        print('Not open yet or event is not walkup or phone')
         return False
 
 
@@ -245,66 +238,45 @@ class CaenHelp(Gtk.Application):
     def get_sys_info(self, DisplayOnly, UserName):
         """Either return hostname and Ip address or write info to file."""
         hostname = socket.gethostname()
-        # get ip address from what is not loopback pref
-        # or hardcode get en0
-        # ip = socket.gethostbyname(hostname)
         ip = get_ip()
         # Used for the system information field on the main window
         if DisplayOnly:
             # Return the hostname stripped of the .engin.umich.edu and the IP
             return "{hostname} \n IP: {ip}".format(hostname=hostname.split(".")[0], ip=ip)
         # Submit has been pressed and it's time to collect the data
-        #  Get all user sessions
-        ## Checks if receipt file exists
-        # need to implement some form of warning to the user #TODO e()[0]
+        # Get all user sessions
         active_sessions = Popen(["loginctl", "list-sessions"]).communicate()[0]
         macaddr_hex = uuid.UUID(int=uuid.getnode()).hex[-12:]
         mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2))
         uid = getpwnam('%s' % UserName)[2]
         gid = getpwnam('%s' % UserName)[3]
+        # Uses temporary file to write pts_grps if on rhel and process list for all
         proc_n_pts = open("/tmp/caen-help-{username}-list".format(username=UserName), "w+")
         if os.path.exists('/etc/redhat-release'):
             Popen(["echo", "PTS Groups:"], stdout=proc_n_pts).communicate()[0]
             Popen(["pts", "mem", UserName], stdout=proc_n_pts).communicate()[0]
         Popen(["echo", "User Process List:"], stdout=proc_n_pts).communicate()[0]
         Popen(['ps', '-ef'], stdout=proc_n_pts).communicate()[0]
-        # if os.path.exists('/etc/redhat-release'):
-        #     # print("On redhat")
-        #     print(pts_grps)
-        #     Popen(["pts","mem", UserName], stdout=pts_grps)
-        #     # pts_grps_r = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
-        #     # print(pts_grps_r)
-        #     # pts_grps = pts_grps_r.read()
-        #     print(pts_grps)
-        # else:
-        #     # TODO write to file something for buntu
-        #     pts_grps = "Using caenbuntu" 
-        #     ##TODO this command is native to rhel does not work on caenbuntu implement os check and run pts only on rhel
+
         # TODO implement id and sanitize user groups maybe remove nums
         # call id output caen-software-groups
         home_path = "/home/{username}".format(username=UserName)
         has_homedir = bool(os.path.exists(home_path) and os.path.isdir(home_path))
         # Save process list to local file because popen with PIPE results
         # in escape characters being stripped
-        # process_list = open("/tmp/caen-help-{username}-process-list"
-                            # .format(uid=uid, username=UserName), "w+")
-        # Pipe stdout to process_list file
-        # print("file:", pts_grps.read())
         # Reopen the file for reading, in read only mode for no particular reason.
         proc_n_pts = open("/tmp/caen-help-{username}-list".format(username=UserName), "r")
-
-        # pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
         with open("/tmp/caen-help-{username}-report".format(username=UserName), "w+") as report:
             report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]),
-                                "IP: {ip}\n".format(ip=ip),
-                                "Mac: {mac} \n".format(mac=mac),
-                                "Username: %s\n" % UserName,
-                                "Active Sessions:\n {active_sessions}"
-                                .format(active_sessions=active_sessions),
-                                "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
-                                "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
-                                "{pts_process}".format(pts_process=proc_n_pts.read())]))
-                              
+                                  "IP: {ip}\n".format(ip=ip),
+                                  "Mac: {mac} \n".format(mac=mac),
+                                  "Username: %s\n" % UserName,
+                                  "Active Sessions:\n {active_sessions}"
+                                  .format(active_sessions=active_sessions),
+                                  "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
+                                  "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
+                                  "{pts_process}".format(pts_process=proc_n_pts.read())]))
+        proc_n_pts.close()
         report.close()
 
 
@@ -325,12 +297,13 @@ class CaenHelp(Gtk.Application):
 
 
     # Function to take screenshots #############################################
-    # I think this needs to be rewritten for this
     def take_screenshot(self, screenshot_button, UserName):
         """Take screenshot and write over the same two files in /tmp based on username."""
         # The following sets a limit of 2 screenshots based on their mtime
         screenshot1 = Path("/tmp/caen-help-{username}-1.png".format(username=UserName))
         screenshot2 = Path("/tmp/caen-help-{username}-2.png".format(username=UserName))
+
+        # Overwrites oldes screenshot
         if screenshot1.is_file() and screenshot2.is_file():
             screenshot1_time = os.path.getmtime(str(screenshot1))
             screenshot2_time = os.path.getmtime(str(screenshot2))
@@ -364,7 +337,7 @@ class CaenHelp(Gtk.Application):
         screenshot1 = "/tmp/caen-help-{username}-1.png".format(username=UserName)
         screenshot2 = "/tmp/caen-help-{username}-2.png".format(username=UserName)
         report_path = "/tmp/caen-help-{username}-report".format(username=UserName)
-        process_list = "/tmp/caen-help-{username}-process-list".format(username=UserName)
+        process_list = "/tmp/caen-help-{username}-list".format(username=UserName)
 
         # If any of the files exist we remove them
         if os.path.exists(screenshot1):
@@ -585,6 +558,7 @@ class CaenHelp(Gtk.Application):
         # Add the grid to the window and tell the window to show all
         window.add(grid)
         window.show_all()
+
 
 if __name__ == '__main__':
     APP = CaenHelp()
