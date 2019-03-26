@@ -260,7 +260,7 @@ class CaenHelp(Gtk.Application):
         # Get and sanitize all groups which machine belongs to
         # TODO remove gid uid 
         caen_ids = open('/tmp/caen-ids', "w+")
-        rawIds = Popen(["id"], stdout=caen_ids).communicate()[0]
+        Popen(["id"], stdout=caen_ids).communicate()[0]
         with open('/tmp/caen-ids', "r") as f:
             raw_list = [id.strip() for id in f.read().split(',')]
             del raw_list[0]
@@ -283,7 +283,7 @@ class CaenHelp(Gtk.Application):
                                   "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
                                   "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                                   "{pts_process}".format(pts_process=proc_n_pts.read()),
-                                  "\License Groups:\n{groups}".format(groups=parsed_ids)]))
+                                  "License Groups:\n{groups}".format(groups=parsed_ids)]))
         proc_n_pts.close()
         report.close()
 
