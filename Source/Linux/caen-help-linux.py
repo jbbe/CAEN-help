@@ -263,18 +263,18 @@ class CaenHelp(Gtk.Application):
         uid = getpwnam('%s' % UserName)[2]
         gid = getpwnam('%s' % UserName)[3]
         pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "w+")
-        if os.path.exists('/etc/redhat-release'):
-            # print("On redhat")
-            print(pts_grps)
-            Popen(["pts","mem", UserName], stdout=pts_grps)
-            # pts_grps_r = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
-            # print(pts_grps_r)
-            # pts_grps = pts_grps_r.read()
-            print(pts_grps)
-        else:
-            # TODO write to file something for buntu
-            pts_grps = "Using caenbuntu" 
-            ##TODO this command is native to rhel does not work on caenbuntu implement os check and run pts only on rhel
+        # if os.path.exists('/etc/redhat-release'):
+        #     # print("On redhat")
+        #     print(pts_grps)
+        #     Popen(["pts","mem", UserName], stdout=pts_grps)
+        #     # pts_grps_r = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
+        #     # print(pts_grps_r)
+        #     # pts_grps = pts_grps_r.read()
+        #     print(pts_grps)
+        # else:
+        #     # TODO write to file something for buntu
+        #     pts_grps = "Using caenbuntu" 
+        #     ##TODO this command is native to rhel does not work on caenbuntu implement os check and run pts only on rhel
         # TODO implement id and sanitize user groups maybe remove nums
         # call id output caen-software-groups
         home_path = "/home/{username}".format(username=UserName)
@@ -302,6 +302,8 @@ class CaenHelp(Gtk.Application):
                               "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
                               "User Process List:\n {process_list}s\n"
                               .format(process_list=process_list.read())]))
+        if os.path.exist('/etc/redhat-release'):
+            Popen(["pts", "mem", UserName], stdout=report)
         report.close()
 
 
