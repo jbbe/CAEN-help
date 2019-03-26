@@ -262,7 +262,12 @@ class CaenHelp(Gtk.Application):
         mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2))
         uid = getpwnam('%s' % UserName)[2]
         gid = getpwnam('%s' % UserName)[3]
-        pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "w+")
+        proc_n_pts = open("/tmp/caen-help-{username}-list".format(username=UserName), "w+")
+        if os.path.exists('/etc/redhat-release'):
+            Popen(["echo", "PTS Groups:"], stdout=proc_n_pts).communicate()[0]
+            Popen(["pts", "mem", UserName], stdout=proc_n_pts).communicate()[0]
+        Popen(["echo", "User Process List:"], stdout=proc_n_pts).communicate()[0]
+        Popen(['ps', '-ef'], stdout=proc_n_pts).communicate()[0]
         # if os.path.exists('/etc/redhat-release'):
         #     # print("On redhat")
         #     print(pts_grps)
@@ -281,29 +286,25 @@ class CaenHelp(Gtk.Application):
         has_homedir = bool(os.path.exists(home_path) and os.path.isdir(home_path))
         # Save process list to local file because popen with PIPE results
         # in escape characters being stripped
-        process_list = open("/tmp/caen-help-{username}-process-list"
-                            .format(uid=uid, username=UserName), "w+")
+        # process_list = open("/tmp/caen-help-{username}-process-list"
+                            # .format(uid=uid, username=UserName), "w+")
         # Pipe stdout to process_list file
-        Popen(['ps', '-ef'], stdout=process_list).communicate()[0]
         # print("file:", pts_grps.read())
         # Reopen the file for reading, in read only mode for no particular reason.
-        process_list = open("/tmp/caen-help-{username}-process-list".format(username=UserName), "r")
+        proc_n_pts = open("/tmp/caen-help-{username}-list".format(username=UserName), "r")
 
-        pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
-        report = open("/tmp/caen-help-{username}-report".format(username=UserName), "w+")
-        report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]),
-                              "IP: {ip}\n".format(ip=ip),
-                              "Mac: {mac} \n".format(mac=mac),
-                              "Username: %s\n" % UserName,
-                              "Active Sessions:\n {active_sessions}"
-                              .format(active_sessions=active_sessions),
-                              "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
-                              "PTS Groups:\n {pts_grps}\n".format(pts_grps=pts_grps.read()),
-                              "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
-                              "User Process List:\n {process_list}s\n"
-                              .format(process_list=process_list.read())]))
-        if os.path.exist('/etc/redhat-release'):
-            Popen(["pts", "mem", UserName], stdout=report)
+        # pts_grps = open("/tmp/caen-help-{username}-pts-grps".format(username=UserName), "r")
+        with open("/tmp/caen-help-{username}-report".format(username=UserName), "w+") as report:
+            report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]),
+                                "IP: {ip}\n".format(ip=ip),
+                                "Mac: {mac} \n".format(mac=mac),
+                                "Username: %s\n" % UserName,
+                                "Active Sessions:\n {active_sessions}"
+                                .format(active_sessions=active_sessions),
+                                "UID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
+                                "Has Homedir: {has_homedir}\n".format(has_homedir=has_homedir),
+                                "{pts_process}".format(pts_process=proc_n_pts.read())]))
+                              
         report.close()
 
 
