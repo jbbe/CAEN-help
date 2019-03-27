@@ -5,7 +5,6 @@
 #############################
 """
 
-# from __future__ import print_function # for calendar api
 import os
 import os.path
 import webbrowser
@@ -27,8 +26,6 @@ from googleapiclient.discovery import build
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-# from gi.repository import Gio
-# from google_auth_oauthlib.flow import InstalledAppFlow
 
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
@@ -55,7 +52,7 @@ def is_in_time_range(start, end):
     now = datetime.datetime.now()
     if start < end:
         return bool(now >= start and now <= end)
-    return now >= start or now <= end
+    return bool(now >= start or now <= end)
 
 
 class CaenHelp(Gtk.Application):
@@ -218,13 +215,10 @@ class CaenHelp(Gtk.Application):
 
         # Determine if the Chat button should be shown using google Cal API
         if self.desk_is_open():
-        #######################################################################
             # Helpdesk Button
             chat_button = Gtk.Button.new_with_label("Chat with the Helpdesk")
             chat_button.connect("clicked", self.start_chat)
             grid_right.attach(chat_button, 0, 6, 1, 1)
-
-        ######################################################################
 
         # Attach the main grid to window and tell window to display everything attached
         window.add(grid)
@@ -281,9 +275,9 @@ class CaenHelp(Gtk.Application):
                                   "\nActive Sessions:\n {active_sessions}"
                                   .format(active_sessions=active_sessions),
                                   "\nUID: {uid}\n".format(uid=uid), "GID: {gid}\n".format(gid=gid),
-                                  "\nHas Homedirectory: {has_homedir}\n".format(has_homedir=has_homedir),
+                                  "\nHas Homedirectory: {has_dir}\n".format(has_dir=has_homedir),
                                   "\n{pts_process}".format(pts_process=proc_n_pts.read()),
-                                  "\nCaen Software License Groups:\n{grps}".format(grps=parsed_ids)]))
+                                  "\nCaen Software License Groups:\n{gps}".format(gps=parsed_ids)]))
         proc_n_pts.close()
         report.close()
 
@@ -423,7 +417,7 @@ class CaenHelp(Gtk.Application):
         SERVER = "mx1.a.mail.umich.edu"
         send_email = MIMEMultipart()
         send_email['From'] = "{username}@umich.edu".format(username=UserName)
-        send_email['To'] = "jbbe@umich.edu"
+        send_email['To'] = "caen@umich.edu"
         send_email['Subject'] = "CAEN Issue Report from {username}".format(username=UserName)
         message = issue_description_text
         send_email.attach(MIMEText(message, 'plain'))
@@ -451,7 +445,6 @@ class CaenHelp(Gtk.Application):
             send_email.attach(part)
 
         if isinstance(Attachment.get_filename(), str):
-            print(Attachment.get_filename())
             part = MIMEBase('application', "octet-stream")
             part.set_payload(open(Attachment.get_filename(), "rb").read())
             email.encoders.encode_base64(part)
