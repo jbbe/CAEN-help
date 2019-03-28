@@ -18,7 +18,7 @@ import email.encoders
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
-from subprocess import Popen # Run cannot be used in rhel 7 due to python 3.4
+from subprocess import Popen
 from pathlib import Path
 from pwd import getpwnam
 from google.auth.transport.requests import Request
@@ -244,8 +244,11 @@ class CaenHelp(Gtk.Application):
         mac = ':'.join(macaddr_hex[i:i + 2] for i in range(0, 11, 2))
         uid = getpwnam('%s' % UserName)[2]
         gid = getpwnam('%s' % UserName)[3]
+
+        fPath = "/run/user/{uid}/".format(uid=uid)
         # Uses temporary file to write pts_grps if on rhel and process list for all
-        proc_n_pts = open("/tmp/caen-help-{username}-list".format(username=UserName), "w+")
+        proc_n_pts = open("{fPath}caen-help-{username}-list"
+                          .format(username=UserName, fPath=fPath), "w+")
         if os.path.exists('/etc/redhat-release'):
             Popen(["echo", "PTS Groups:"], stdout=proc_n_pts).communicate()[0]
             Popen(["pts", "mem", UserName], stdout=proc_n_pts).communicate()[0]
@@ -254,9 +257,9 @@ class CaenHelp(Gtk.Application):
 
         # Get and sanitize all groups which machine belongs to
 
-        caen_ids = open('/tmp/caen-ids', "w+")
+        caen_ids = open("{fPath}caen-ids".format(fPath=fPath), "w+")
         Popen(["id"], stdout=caen_ids).communicate()[0]
-        with open('/tmp/caen-ids', "r") as f:
+        with open('{fPath}caen-ids'.format(fPath=fPath), "r") as f:
             raw_list = [id.strip() for id in f.read().split(',')]
             del raw_list[0]
             parsed_ids = "\n".join(raw_list)
@@ -266,8 +269,9 @@ class CaenHelp(Gtk.Application):
         # Save process list to local file because popen with PIPE results
         # in escape characters being stripped
         # Reopen the file for reading, in read only mode for no particular reason.
-        proc_n_pts = open("/tmp/caen-help-{username}-list".format(username=UserName), "r")
-        with open("/tmp/caen-help-{username}-report".format(username=UserName), "w+") as report:
+        proc_n_pts = open("{fPath}caen-help-{username}-list"
+                          .format(username=UserName, fPath=fPath), "r")
+        with open("{fPath}caen-help-{username}-report".format(fPath=fPath, username=UserName), "w+") as report:
             report.write(''.join(["Hostname: {hostname}\n".format(hostname=hostname.split(".")[0]),
                                   "\nIP: {ip}\n".format(ip=ip),
                                   "\nMac: {mac} \n".format(mac=mac),
@@ -300,30 +304,34 @@ class CaenHelp(Gtk.Application):
 
     # Function to take screenshots #############################################
     def take_screenshot(self, screenshot_button, UserName):
-        """Take screenshot and write over the same two files in /tmp based on username."""
+        """Take screenshot and write over the same two files in XDGRUNTIME DIR based on username."""
         # The following sets a limit of 2 screenshots based on their mtime
-        screenshot1 = Path("/tmp/caen-help-{username}-1.png".format(username=UserName))
-        screenshot2 = Path("/tmp/caen-help-{username}-2.png".format(username=UserName))
+        uid = getpwnam("{username}".format(username=UserName))[2]
+        fPath = "/run/user/{uid}/".format(uid=uid)
+        screenshot1 = Path("{fPath}caen-help-{username}-1.png"
+                           .format(fPath=fPath, username=UserName))
+        screenshot2 = Path("{fPath}caen-help-{username}-2.png"
+                           .format(fPath=fPath, username=UserName))
 
         # Overwrites oldes screenshot
         if screenshot1.is_file() and screenshot2.is_file():
             screenshot1_time = os.path.getmtime(str(screenshot1))
             screenshot2_time = os.path.getmtime(str(screenshot2))
             if screenshot2_time < screenshot1_time:
-                Popen(["gnome-screenshot", "-f", "/tmp/caen-help-{username}-2.png"
-                       .format(username=UserName)])
+                Popen(["gnome-screenshot", "-f", "{fPath}caen-help-{username}-2.png"
+                       .format(fPath=fPath, username=UserName)])
                 screenshot_button.set_label("Take another screenshot")
             else:
-                Popen(["gnome-screenshot", "-f", "/tmp/caen-help-{username}-1.png"
-                       .format(username=UserName)])
+                Popen(["gnome-screenshot", "-f", "{fPath}caen-help-{username}-1.png"
+                       .format(fPath=fPath, username=UserName)])
                 screenshot_button.set_label("Take another screenshot")
         elif screenshot1.is_file():
-            Popen(["gnome-screenshot", "-f", "/tmp/caen-help-{username}-2.png"
-                   .format(username=UserName)])
+            Popen(["gnome-screenshot", "-f", "{fPath}caen-help-{username}-2.png"
+                   .format(fPath=fPath, username=UserName)])
             screenshot_button.set_label("Take another screenshot")
         else:
-            Popen(["gnome-screenshot", "-f", "/tmp/caen-help-{username}-1.png"
-                   .format(username=UserName)])
+            Popen(["gnome-screenshot", "-f", "{fPath}caen-help-{username}-1.png"
+                   .format(fPath=fPath, username=UserName)])
             screenshot_button.set_label("Take another screenshot")
 
 
@@ -336,11 +344,13 @@ class CaenHelp(Gtk.Application):
         # Add rm with wildcard to delete temp files
         # delete screenshots
         # delete info file
-        screenshot1 = "/tmp/caen-help-{username}-1.png".format(username=UserName)
-        screenshot2 = "/tmp/caen-help-{username}-2.png".format(username=UserName)
-        report_path = "/tmp/caen-help-{username}-report".format(username=UserName)
-        process_list = "/tmp/caen-help-{username}-list".format(username=UserName)
-        license_file = "/tmp/caen-ids"
+        uid = getpwnam("{username}".format(username=UserName))[2]
+        fPath = "/run/user/{uid}/".format(uid=uid)
+        screenshot1 = "{fPath}caen-help-{username}-1.png".format(fPath=fPath, username=UserName)
+        screenshot2 = "{fPath}caen-help-{username}-2.png".format(fPath=fPath, username=UserName)
+        report_path = "{fPath}caen-help-{username}-report".format(fPath=fPath, username=UserName)
+        process_list = "{fPath}caen-help-{username}-list".format(fPath=fPath, username=UserName)
+        license_file = "{fPath}caen-ids".format(fPath=fPath)
 
         # If any of the files exist we remove them
         if os.path.exists(screenshot1):
@@ -355,8 +365,8 @@ class CaenHelp(Gtk.Application):
             os.remove(license_file)
 
         uid = getpwnam("{username}".format(username=UserName))[2]
-        receipt = open(("/run/user/{uid}/caen-help-{username}-receipt")
-                       .format(uid=uid, username=UserName), "w+")
+        receipt = open("{fPath}caen-help-{username}-receipt"
+                       .format(fPath=fPath, username=UserName), "w+")
         receipt.close()
         # Kill the report window
         # I want to eventually add a green submitted button or some other form of feedback
@@ -410,8 +420,9 @@ class CaenHelp(Gtk.Application):
                         issue_description_bounds[1], True)
 
         # Set screen shot path names
-        screen_shot_1 = "/tmp/caen-help-{username}-1.png".format(username=UserName)
-        screen_shot_2 = "/tmp/caen-help-{username}-2.png".format(username=UserName)
+        fPath = "/run/user/{uid}/".format(uid=uid)
+        screen_shot_1 = "{fPath}caen-help-{username}-1.png".format(fPath=fPath, username=UserName)
+        screen_shot_2 = "{fPath}caen-help-{username}-2.png".format(fPath=fPath, username=UserName)
 
         # Initialize email message and server
         SERVER = "mx1.a.mail.umich.edu"
@@ -456,13 +467,13 @@ class CaenHelp(Gtk.Application):
         # Get status of whether or not the problem is with this computer
         # True and false are flipped due to Index.
         # Yes (0) is the desired first and default result
-        # If false then attach info doc from tmp/ dir
+        # If false then attach info doc from XDG_RUNTIME dir
         data_collection_is_off = ThisComputer.get_active()
         if not data_collection_is_off:
             self.get_sys_info(False, UserName)
             part = MIMEBase('application', "octet-stream")
-            part.set_payload(open("/tmp/caen-help-{username}-report"
-                                  .format(username=UserName), "rb").read())
+            part.set_payload(open("{fPath}caen-help-{username}-report"
+                                  .format(fPath=fPath, username=UserName), "rb").read())
             email.encoders.encode_base64(part)
             part.add_header('Content-Disposition',
                             'attachment; filename={username}-on-{hostname}-issueReport.txt'
